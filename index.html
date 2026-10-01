@@ -1,0 +1,979 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Der elektrische Widerstand</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: full-height deck — progress bar on top, one slide at a time, nav bar at the bottom.
+   Single light theme on purpose (white base, blue + green accents). */
+:root {
+  color-scheme: light;
+  --bg: #ffffff;
+  --ink: #0f1b2d;
+  --muted: #55637a;
+  --line: #dbe3ee;
+  --blue: #1d5fd1;
+  --blue-soft: #eaf1fd;
+  --green: #11905a;
+  --green-soft: #e6f6ed;
+  /* component colors used in the drawings */
+  --ceramic: #efe5cf;
+  --ceramic-light: #f6f2ea;
+  --carbon: #2b2f36;
+  --copper: #c4773a;
+  --tin: #b9c1cc;
+  --tin-dark: #8d97a4;
+  --heat: #e4532f;
+  --lacquer: #e4d0a2;
+
+  --f-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body: "IBM Plex Sans", "Segoe UI", Roboto, Arial, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+
+  --fs-body: clamp(16px, 0.7vw + 11px, 21px);
+  --fs-small: clamp(13px, 0.45vw + 9px, 16px);
+  --fs-h2: clamp(28px, 2.6vw + 10px, 50px);
+}
+html, body { height: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--f-body);
+  font-size: var(--fs-body);
+  line-height: 1.5;
+  overflow: hidden;
+}
+
+.deck { height: 100%; display: flex; flex-direction: column; }
+
+/* ---------- progress ---------- */
+.progress {
+  position: relative;
+  height: 6px;
+  background: var(--blue-soft);
+  flex: none;
+}
+.progress-fill {
+  position: absolute; inset: 0 auto 0 0;
+  width: 0;
+  background: linear-gradient(90deg, var(--blue), var(--green));
+  border-radius: 0 3px 3px 0;
+  transition: width .5s cubic-bezier(.4,.1,.2,1);
+}
+
+/* ---------- stage ---------- */
+.stage { position: relative; flex: 1; min-height: 0; overflow: hidden; }
+.slide {
+  position: absolute; inset: 0;
+  overflow-y: auto;
+  padding-inline: clamp(16px, 4vw, 64px);
+  padding-block: clamp(20px, 3.5vh, 48px);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(40px);
+  transition: opacity .45s ease, transform .45s ease, visibility 0s linear .45s;
+}
+.slide.before { transform: translateX(-40px); }
+.slide.active {
+  opacity: 1; visibility: visible; transform: none;
+  transition: opacity .45s ease, transform .45s ease, visibility 0s;
+}
+.wrap {
+  max-width: 1200px;
+  min-height: 100%;
+  margin-inline: auto;
+  display: flex; flex-direction: column; justify-content: center;
+  gap: clamp(16px, 2.6vh, 32px);
+}
+
+/* staged entrance of the parts of the current slide */
+.slide.active .r { animation: rise .6s cubic-bezier(.2,.7,.2,1) both; animation-delay: calc(var(--d, 0) * 110ms + 120ms); }
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+
+/* ---------- type ---------- */
+.eyebrow {
+  font-family: var(--f-mono);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--green);
+  display: flex; align-items: center; gap: 10px;
+}
+.eyebrow::before { content: ""; width: 28px; height: 3px; border-radius: 2px; background: var(--green); }
+h1, h2 { font-family: var(--f-display); text-wrap: balance; margin: 0; letter-spacing: -0.01em; }
+h2 { font-size: var(--fs-h2); line-height: 1.1; font-weight: 800; color: var(--ink); }
+h2 em { font-style: normal; color: var(--blue); }
+h3 { font-family: var(--f-display); font-weight: 700; font-size: 1.1em; margin: 0 0 6px; color: var(--blue); }
+p { margin: 0; max-width: 62ch; }
+.lead { font-size: 1.12em; color: var(--ink); }
+.muted { color: var(--muted); }
+ul.list { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+ul.list li { position: relative; padding-left: 26px; }
+ul.list li::before {
+  content: ""; position: absolute; left: 2px; top: .55em;
+  width: 10px; height: 10px; border-radius: 3px; background: var(--green);
+}
+ul.list.minus li::before { background: var(--heat); }
+strong { font-weight: 600; }
+
+/* ---------- layout pieces ---------- */
+.split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: clamp(20px, 3vw, 48px); align-items: center; }
+.split.even { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.stack { display: grid; gap: clamp(12px, 1.8vh, 20px); min-width: 0; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.grid4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+
+.card {
+  background: var(--bg);
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  padding: clamp(14px, 1.6vw, 22px);
+  min-width: 0;
+}
+.card.blue { background: var(--blue-soft); border-color: transparent; }
+.card.green { background: var(--green-soft); border-color: transparent; }
+.card p { font-size: .95em; }
+
+.formula {
+  font-family: var(--f-mono);
+  font-weight: 600;
+  color: var(--blue);
+  font-size: clamp(30px, 3.4vw + 8px, 64px);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+.formula .g { color: var(--green); }
+.formula.sm { font-size: clamp(22px, 1.8vw + 8px, 38px); }
+.mono { font-family: var(--f-mono); font-weight: 500; }
+.unit {
+  display: inline-block; font-family: var(--f-mono); font-weight: 600;
+  background: var(--blue-soft); color: var(--blue);
+  padding: 1px 8px; border-radius: 6px;
+}
+
+.calc {
+  font-family: var(--f-mono); font-size: .9em; line-height: 1.7;
+  background: var(--ceramic-light); border-radius: 12px; padding: 14px 18px;
+  font-variant-numeric: tabular-nums;
+}
+.calc b { color: var(--green); font-weight: 600; }
+
+figure { margin: 0; min-width: 0; }
+figcaption { font-size: var(--fs-small); color: var(--muted); margin-top: 8px; }
+.fig { width: 100%; height: auto; display: block; overflow: visible; }
+.fig-box { overflow-x: auto; }
+
+/* SVG text + leader lines */
+.lbl { font-family: var(--f-body); font-size: 15px; fill: var(--ink); font-weight: 500; }
+.lbl.s { font-size: 13px; fill: var(--muted); font-weight: 400; }
+.lbl.b { fill: var(--blue); font-weight: 600; }
+.lbl.g { fill: var(--green); font-weight: 600; }
+.ldr { stroke: var(--muted); stroke-width: 1.2; fill: none; }
+.dot { fill: var(--muted); }
+.axis { stroke: var(--ink); stroke-width: 1.5; fill: none; }
+.grid { stroke: var(--line); stroke-width: 1; fill: none; }
+.tick { font-family: var(--f-mono); font-size: 12px; fill: var(--muted); }
+
+/* table */
+.tbl-box { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: .9em; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-family: var(--f-mono); font-size: .78em; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+td.num { font-family: var(--f-mono); white-space: nowrap; }
+tr.hl td { background: var(--green-soft); }
+.bar { display: inline-block; height: 8px; border-radius: 4px; background: var(--blue); vertical-align: middle; margin-left: 8px; }
+
+/* ---------- title + end slide ---------- */
+.title-slide h1 {
+  font-size: clamp(40px, 5.6vw + 10px, 104px);
+  font-weight: 800; line-height: .98; letter-spacing: -0.025em;
+}
+.title-slide h1 span { color: var(--blue); }
+.title-slide .sub { font-size: 1.15em; color: var(--muted); max-width: 46ch; }
+.agenda { display: flex; flex-wrap: wrap; gap: 8px; }
+.agenda button {
+  font: inherit; font-size: var(--fs-small);
+  border: 1.5px solid var(--line); background: var(--bg); color: var(--ink);
+  padding: 5px 12px; border-radius: 999px; cursor: pointer;
+  transition: border-color .2s, color .2s, background .2s;
+}
+.agenda button:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-soft); }
+.agenda button b { font-family: var(--f-mono); color: var(--green); margin-right: 4px; }
+
+.big-omega {
+  font-family: var(--f-display); font-weight: 800;
+  font-size: clamp(120px, 18vw, 260px); line-height: .8;
+  background: linear-gradient(135deg, var(--blue), var(--green));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+
+/* ---------- ohm interactive ---------- */
+.ctrl { display: grid; gap: 4px; }
+.ctrl label { display: flex; justify-content: space-between; font-size: var(--fs-small); color: var(--muted); }
+.ctrl output { font-family: var(--f-mono); font-weight: 600; color: var(--ink); }
+input[type=range] { width: 100%; accent-color: var(--blue); }
+#ohmR { accent-color: var(--green); }
+.result {
+  display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+  font-family: var(--f-mono); font-variant-numeric: tabular-nums;
+}
+.result .val { font-size: 1.6em; font-weight: 600; color: var(--blue); }
+
+.triangle { width: 150px; flex: none; }
+
+/* ---------- animations inside drawings ---------- */
+.slide.active .draw { stroke-dasharray: 1; animation: draw 1.3s .5s ease both; }
+@keyframes draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+.wave { animation: waveUp 2.6s ease-in infinite; }
+.wave:nth-of-type(2) { animation-delay: .85s; }
+.wave:nth-of-type(3) { animation-delay: 1.7s; }
+@keyframes waveUp { 0% { opacity: 0; transform: translateY(10px); } 30% { opacity: .9; } 100% { opacity: 0; transform: translateY(-34px); } }
+.glow { animation: glow 2.4s ease-in-out infinite alternate; }
+@keyframes glow { from { opacity: .35; } to { opacity: .95; } }
+.ion { transition: transform .3s; }
+
+/* ---------- nav bar ---------- */
+.nav {
+  flex: none;
+  display: flex; align-items: center; gap: 12px;
+  padding-inline: clamp(16px, 4vw, 64px);
+  padding-top: 10px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--line);
+  background: var(--bg);
+}
+.nav .where {
+  flex: 1; min-width: 0;
+  font-size: var(--fs-small); color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.nav .where b { color: var(--ink); font-weight: 600; }
+.page {
+  font-family: var(--f-mono); font-size: var(--fs-small); font-weight: 600;
+  font-variant-numeric: tabular-nums; color: var(--ink);
+  padding: 6px 12px; border-radius: 8px; background: var(--blue-soft);
+}
+.page span { color: var(--muted); font-weight: 500; }
+.btn {
+  font: inherit; font-size: var(--fs-small); font-weight: 600;
+  display: inline-flex; align-items: center; gap: 8px;
+  border: 0; border-radius: 10px; cursor: pointer;
+  padding: 10px 18px;
+  transition: background .2s, transform .15s, opacity .2s;
+}
+.btn:active { transform: scale(.97); }
+.btn.prev { background: var(--blue-soft); color: var(--blue); }
+.btn.prev:hover { background: #dbe7fb; }
+.btn.next { background: var(--blue); color: #fff; }
+.btn.next:hover { background: #174fb0; }
+.btn.next.done { background: var(--green); }
+.btn:disabled { opacity: .35; cursor: default; transform: none; }
+.btn svg { width: 16px; height: 16px; }
+:focus-visible { outline: 3px solid var(--green); outline-offset: 2px; border-radius: 6px; }
+
+/* ---------- responsive ---------- */
+@media (max-width: 900px) {
+  .split, .split.even { grid-template-columns: minmax(0, 1fr); }
+  .grid4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .wrap { justify-content: flex-start; }
+}
+@media (max-width: 560px) {
+  .grid2, .grid4 { grid-template-columns: minmax(0, 1fr); }
+  .nav .where { display: none; }
+  .nav { justify-content: space-between; }
+  .btn .txt { display: none; }
+  .btn { padding: 10px 14px; }
+  .triangle { width: 110px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="deck">
+  <div class="progress" role="progressbar" aria-label="Fortschritt" aria-valuemin="1" aria-valuemax="11" aria-valuenow="1">
+    <div class="progress-fill" id="progress"></div>
+  </div>
+
+  <main class="stage" id="stage">
+
+    <!-- 1 · Titel -->
+    <section class="slide title-slide" data-title="Titel">
+      <div class="wrap">
+        <div class="eyebrow r" style="--d:0">Physik · Elektrotechnik</div>
+        <h1 class="r" style="--d:1">Der elektrische<br><span>Widerstand</span></h1>
+        <p class="sub r" style="--d:2">Was Strom bremst, warum dabei Wärme entsteht und wie Widerstände als Bauteile aufgebaut sind.</p>
+        <figure class="r" style="--d:3; max-width: 640px">
+          <svg class="fig" viewBox="0 0 600 150" role="img" aria-label="Widerstand mit Farbringen gelb, violett, rot, gold: 4,7 Kiloohm">
+            <defs>
+              <clipPath id="bodyClip"><rect x="150" y="35" width="300" height="80" rx="36"/></clipPath>
+              <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0" stop-color="#ffffff" stop-opacity=".55"/>
+                <stop offset=".45" stop-color="#ffffff" stop-opacity="0"/>
+                <stop offset="1" stop-color="#000000" stop-opacity=".12"/>
+              </linearGradient>
+            </defs>
+            <line x1="0" y1="75" x2="160" y2="75" stroke="var(--tin-dark)" stroke-width="6" stroke-linecap="round"/>
+            <line x1="440" y1="75" x2="600" y2="75" stroke="var(--tin-dark)" stroke-width="6" stroke-linecap="round"/>
+            <g clip-path="url(#bodyClip)">
+              <rect x="150" y="35" width="300" height="80" fill="var(--lacquer)"/>
+              <rect x="196" y="35" width="20" height="80" fill="#e8c21a"/>
+              <rect x="236" y="35" width="20" height="80" fill="#7b3fb2"/>
+              <rect x="276" y="35" width="20" height="80" fill="#d42a2a"/>
+              <rect x="386" y="35" width="20" height="80" fill="#c59a2c"/>
+              <rect x="150" y="35" width="300" height="80" fill="url(#shine)"/>
+            </g>
+            <text class="lbl s" x="206" y="140" text-anchor="middle">4</text>
+            <text class="lbl s" x="246" y="140" text-anchor="middle">7</text>
+            <text class="lbl s" x="286" y="140" text-anchor="middle">·10²</text>
+            <text class="lbl s" x="396" y="140" text-anchor="middle">±5 %</text>
+            <text class="lbl b" x="520" y="58" text-anchor="middle">= 4,7 kΩ</text>
+          </svg>
+        </figure>
+        <div class="agenda r" style="--d:4" id="agenda"></div>
+      </div>
+    </section>
+
+    <!-- 2 · Was ist elektrischer Widerstand -->
+    <section class="slide" data-title="Was ist elektrischer Widerstand?">
+      <div class="wrap">
+        <div class="eyebrow r" style="--d:0">Thema 1</div>
+        <h2 class="r" style="--d:1">Was ist elektrischer <em>Widerstand</em>?</h2>
+        <div class="split">
+          <div class="stack">
+            <p class="lead r" style="--d:2">Der elektrische Widerstand gibt an, wie stark ein Leiter den elektrischen Strom <strong>hemmt</strong>.</p>
+            <p class="r" style="--d:3">Im Metall bewegen sich freie Elektronen durch ein Gitter aus Atomrümpfen. Dabei stoßen sie ständig mit den Atomrümpfen zusammen und werden abgebremst. Je mehr Zusammenstöße, desto größer der Widerstand.</p>
+            <div class="grid2 r" style="--d:4">
+              <div class="card blue">
+                <h3>Formelzeichen</h3>
+                <p><span class="unit">R</span> von lat. <i>resistere</i> = sich widersetzen</p>
+              </div>
+              <div class="card green">
+                <h3 style="color:var(--green)">Einheit</h3>
+                <p><span class="unit">1 Ω = 1 V / 1 A</span><br><span class="muted">Ohm, nach Georg Simon Ohm</span></p>
+              </div>
+            </div>
+          </div>
+          <figure class="r" style="--d:3">
+            <svg class="fig" viewBox="0 0 560 300" role="img" aria-label="Elektronen bewegen sich durch das Metallgitter und stoßen an Atomrümpfe">
+              <rect x="0" y="10" width="560" height="220" rx="18" fill="var(--blue-soft)"/>
+              <g id="lattice"></g>
+              <g id="electrons"></g>
+              <!-- Schaltzeichen -->
+              <g transform="translate(0,252)">
+                <line x1="20" y1="22" x2="80" y2="22" stroke="var(--ink)" stroke-width="2.5"/>
+                <rect x="80" y="10" width="70" height="24" fill="var(--bg)" stroke="var(--ink)" stroke-width="2.5"/>
+                <line x1="150" y1="22" x2="210" y2="22" stroke="var(--ink)" stroke-width="2.5"/>
+                <text class="lbl" x="226" y="27">Schaltzeichen nach DIN EN 60617</text>
+              </g>
+            </svg>
+            <figcaption><span style="color:var(--green)">●</span> Elektronen &nbsp; <span style="color:var(--blue)">⊕</span> Atomrümpfe im Metallgitter</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3 · Ohmsches Gesetz -->
+    <section class="slide" data-title="Das Ohmsche Gesetz">
+      <div class="wrap">
+        <div class="eyebrow r" style="--d:0">Thema 2</div>
+        <h2 class="r" style="--d:1">Das <em>Ohmsche</em> Gesetz</h2>
+        <div class="split">
+          <div class="stack">
+            <div class="r" style="--d:2; display:flex; align-items:center; gap:24px; flex-wrap:wrap">
+              <div class="formula">U = R · I</div>
+              <svg class="triangle" viewBox="0 0 160 140" role="img" aria-label="Formeldreieck U über R mal I">
+                <path d="M80 6 L154 134 L6 134 Z" fill="var(--blue-soft)" stroke="var(--blue)" stroke-width="3" stroke-linejoin="round"/>
+                <line x1="42" y1="72" x2="118" y2="72" stroke="var(--blue)" stroke-width="2.5"/>
+                <line x1="80" y1="72" x2="80" y2="134" stroke="var(--blue)" stroke-width="2.5"/>
+                <text x="80" y="60" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-weight="600" font-size="30" fill="var(--blue)">U</text>
+                <text x="52" y="118" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-weight="600" font-size="28" fill="var(--green)">R</text>
+                <text x="108" y="118" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-weight="600" font-size="28" fill="var(--green)">I</text>
+              </svg>
+            </div>
+            <p class="r" style="--d:3">Bei konstanter Temperatur ist die Stromstärke <strong>I</strong> proportional zur Spannung <strong>U</strong>. Der Widerstand <strong>R</strong> ist der Proportionalitätsfaktor.</p>
+            <div class="r mono" style="--d:4; display:flex; gap:24px; flex-wrap:wrap; color:var(--muted)">
+              <span>R = U / I</span><span>I = U / R</span>
+            </div>
+            <div class="card r" style="--d:5; display:grid; gap:12px">
+              <div class="ctrl">
+                <label for="ohmU">Spannung U <output id="outU">6,0 V</output></label>
+                <input type="range" id="ohmU" min="0" max="10" step="0.5" value="6">
+              </div>
+              <div class="ctrl">
+                <label for="ohmR">Widerstand R <output id="outR">20 Ω</output></label>
+                <input type="range" id="ohmR" min="10" max="50" step="1" value="20">
+              </div>
+              <div class="result"><span class="muted">I = U / R =</span><span class="val" id="outI">0,30 A</span></div>
+            </div>
+          </div>
+          <figure class="r" style="--d:3">
+            <svg class="fig" viewBox="0 0 440 300" role="img" aria-label="I-U-Kennlinie: Gerade durch den Ursprung">
+              <g id="ohmGrid"></g>
+              <path class="axis" d="M60 22 L60 250 L418 250"/>
+              <path d="M54 30 L60 18 L66 30 Z M410 244 L422 250 L410 256 Z" fill="var(--ink)"/>
+              <text class="lbl" x="70" y="22">I in A</text>
+              <text class="lbl" x="420" y="282" text-anchor="end">U in V</text>
+              <line id="ohmLine" class="draw" pathLength="1" x1="60" y1="250" x2="410" y2="140" stroke="var(--blue)" stroke-width="4" stroke-linecap="round"/>
+              <line id="ohmGuideX" x1="270" y1="250" x2="270" y2="184" stroke="var(--green)" stroke-width="1.5" stroke-dasharray="4 4"/>
+              <line id="ohmGuideY" x1="60" y1="184" x2="270" y2="184" stroke="var(--green)" stroke-width="1.5" stroke-dasharray="4 4"/>
+              <circle id="ohmDot" cx="270" cy="184" r="8" fill="var(--green)" stroke="var(--bg)" stroke-width="3"/>
+              <text id="ohmLabel" class="lbl b" x="404" y="128" text-anchor="end">R = 20 Ω</text>
+            </svg>
+            <figcaption>I-U-Kennlinie eines ohmschen Widerstands: eine Gerade durch den Ursprung. Je größer R, desto flacher die Gerade.</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 · Wärme -->
+    <section class="slide" data-title="Elektrische Energie wird zu Wärme">
+      <div class="wrap">
+        <div class="eyebrow r" style="--d:0">Thema 3</div>
+        <h2 class="r" style="--d:1">Elektrische Energie wird zu <em>Wärme</em></h2>
+        <div class="split">
+          <div class="stack">
+            <p class="r" style="--d:2">Bei jedem Zusammenstoß geben die Elektronen Bewegungsenergie an die Atomrümpfe ab. Diese schwingen stärker, der Leiter wird warm. Man nennt das <strong>Stromwärme</strong> oder joulesche Wärme.</p>
+            <div class="r" style="--d:3; display:grid; gap:6px">
+              <div class="formula sm">P = U · I = I² · R</div>
+              <div class="formula sm"><span class="g">W = P · t</span></div>
+            </div>
+            <div class="calc r" style="--d:4">
+              Wasserkocher: U = 230 V, P = 2000 W<br>
+              I = P / U = 2000 W / 230 V ≈ <b>8,7 A</b><br>
+              R = U² / P = (230 V)² / 2000 W ≈ <b>26,5 Ω</b>
+            </div>
+          </div>
+          <div class="stack">
+            <figure class="r" style="--d:3">
+              <svg class="fig" viewBox="0 0 440 230" role="img" aria-label="Glühender Heizdraht gibt Wärme ab">
+                <defs>
+                  <filter id="blur" x="-20%" y="-50%" width="140%" height="200%"><feGaussianBlur stdDeviation="7"/></filter>
+                </defs>
+                <g fill="none" stroke="var(--heat)" stroke-width="3" stroke-linecap="round">
+                  <path class="wave" d="M130 120 q 12 -14 0 -28 q -12 -14 0 -28 q 12 -14 0 -28"/>
+                  <path class="wave" d="M220 120 q 12 -14 0 -28 q -12 -14 0 -28 q 12 -14 0 -28"/>
+                  <path class="wave" d="M310 120 q 12 -14 0 -28 q -12 -14 0 -28 q 12 -14 0 -28"/>
+                </g>
+                <path class="glow" filter="url(#blur)" d="M70 170 l20 -26 l20 52 l20 -52 l20 52 l20 -52 l20 52 l20 -52 l20 52 l20 -52 l20 52 l20 -52 l20 52 l20 -52 l20 26" stroke="var(--heat)" stroke-width="16" fill="none"/>
+                <path d="M70 170 l20 -26 l20 52 l20 -52 l20 52 l20 -52 l20 52 l20 -52 l20 52 l20 -52 l20 52 l20 -52 l20 52 l20 -52 l20 26" stroke="#c2361a" stroke-width="5" fill="none" stroke-linejoin="round"/>
+                <rect x="20" y="155" width="50" height="30" rx="5" fill="var(--tin-dark)"/>
+                <rect x="370" y="155" width="50" height="30" rx="5" fill="var(--tin-dark)"/>
+                <text class="lbl s" x="45" y="215" text-anchor="middle">+</text>
+                <text class="lbl s" x="395" y="215" text-anchor="middle">–</text>
+                <text class="lbl" x="220" y="225" text-anchor="middle">Heizdraht</text>
+              </svg>
+            </figure>
+            <div class="grid2 r" style="--d:5">
+              <div class="card green">
+                <h3 style="color:var(--green)">Erwünscht</h3>
+                <p>Toaster, Heizlüfter, Bügeleisen, Föhn, Schmelzsicherung</p>
+              </div>
+              <div class="card">
+                <h3>Unerwünscht</h3>
+                <p>Verluste in Leitungen, warme Netzteile und Prozessoren</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5 · Wovon hängt der Widerstand ab -->
+    <section class="slide" data-title="Wovon hängt der Widerstand ab?">
+      <div class="wrap">
+        <div class="eyebrow r" style="--d:0">Thema 4</div>
+        <h2 class="r" style="--d:1">Wovon hängt der Widerstand <em>ab</em>?</h2>
+        <div class="split">
+          <div class="stack">
+            <div class="formula r" style="--d:2">R = <span class="g">ρ</span> · l / A</div>
+            <div class="grid2 r" style="--d:3">
+              <div class="card blue"><h3>Länge l</h3><p>Doppelte Länge → <strong>doppelter</strong> Widerstand</p></div>
+              <div class="card blue"><h3>Querschnitt A</h3><p>Doppelter Querschnitt → <strong>halber</strong> Widerstand</p></div>
+              <div class="card green"><h3 style="color:var(--green)">Material ρ</h3><p>Spezifischer Widerstand, ein Materialwert</p></div>
+              <div class="card green"><h3 style="color:var(--green)">Temperatur ϑ</h3><p>Metalle: wärmer → R steigt. Kohle: wärmer → R sinkt.</p></div>
+            </div>
+          </div>
+          <div class="stack">
+            <figure class="r" style="--d:3">
+              <svg class="fig" viewBox="0 0 460 120" role="img" aria-label="Leiter mit Länge l und Querschnittsfläche A">
+                <ellipse cx="60" cy="56" rx="18" ry="34" fill="var(--copper)" opacity=".55"/>
+                <path d="M60 22 L380 22 A18 34 0 0 1 380 90 L60 90" fill="var(--copper)"/>
+                <ellipse cx="60" cy="56" rx="18" ry="34" fill="#e4a873" stroke="#9b5a26" stroke-width="1.5"/>
+                <text x="60" y="62" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-weight="600" font-size="16" fill="var(--ink)">A</text>
+                <line x1="60" y1="106" x2="380" y2="106" stroke="var(--blue)" stroke-width="2"/>
+                <path d="M60 100 v12 M380 100 v12" stroke="var(--blue)" stroke-width="2"/>
+                <text class="lbl b" x="220" y="100" text-anchor="middle">l</text>
+                <text class="lbl s" x="400" y="60">Kupferdraht</text>
+              </svg>
+            </figure>
+            <div class="tbl-box r" style="--d:4">
+              <table>
+                <thead><tr><th>Material</th><th>ρ in Ω·mm²/m (20 °C)</th></tr></thead>
+                <tbody id="rhoTable"></tbody>
+              </table>
+            </div>
+            <div class="calc r" style="--d:5">100 m Kupferleitung, A = 1,5 mm²: R = 0,0178 · 100 / 1,5 ≈ <b>1,19 Ω</b></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6 · Metallische Widerstände -->
+    <section class="slide" data-title="Metallische Widerstände">
+      <div class="wrap">
+        <div class="eyebrow r" style="--d:0">Thema 5</div>
+        <h2 class="r" style="--d:1"><em>Metallische</em> Widerstände</h2>
+        <div class="split">
+          <div class="stack">
+            <div class="card blue r" style="--d:2">
+              <h3>Drahtwiderstand</h3>
+              <p>Ein Widerstandsdraht aus Konstantan, Manganin oder Chromnickel ist auf einen Keramikkörper gewickelt und mit Glasur oder Zement geschützt.</p>
+            </div>
+            <div class="card green r" style="--d:3">
+              <h3 style="color:var(--green)">Metallschichtwiderstand</h3>
+              <p>Eine sehr dünne Metallschicht wird auf einen Keramikstab aufgedampft. Eine eingeschliffene Wendel stellt den genauen Wert ein.</p>
+            </div>
+            <ul class="list r" style="--d:4">
+              <li>Sehr genau: Toleranz ±0,1 … 1 %</li>
+              <li>Kleiner Temperaturkoeffizient, wenig Rauschen</li>
+              <li>Drahtwiderstände halten hohe Leistung aus</li>
+            </ul>
+          </div>
+          <figure class="fig-box r" style="--d:3">
+            <svg class="fig" viewBox="0 0 640 270" role="img" aria-label="Aufbau eines Drahtwiderstands">
+              <line x1="16" y1="135" x2="122" y2="135" stroke="var(--tin-dark)" stroke-width="6" stroke-linecap="round"/>
+              <line x1="518" y1="135" x2="624" y2="135" stroke="var(--tin-dark)" stroke-width="6" stroke-linecap="round"/>
+              <rect x="140" y="98" width="360" height="74" fill="var(--ceramic)"/>
+              <g id="coil"></g>
+              <rect x="134" y="88" width="372" height="94" rx="12" fill="var(--green)" fill-opacity=".1" stroke="var(--green)" stroke-width="2" stroke-dasharray="6 5"/>
+              <rect x="112" y="80" width="34" height="110" rx="6" fill="var(--tin)" stroke="var(--tin-dark)" stroke-width="2"/>
+              <rect x="494" y="80" width="34" height="110" rx="6" fill="var(--tin)" stroke="var(--tin-dark)" stroke-width="2"/>
+
+              <path class="ldr" d="M70 135 L70 214"/><circle class="dot" cx="70" cy="135" r="3.5"/>
+              <text class="lbl" x="70" y="232" text-anchor="middle">Anschlussdraht</text>
+              <path class="ldr" d="M129 80 L129 44"/><circle class="dot" cx="129" cy="82" r="3.5"/>
+              <text class="lbl" x="129" y="36" text-anchor="middle">Endkappe</text>
+              <path class="ldr" d="M300 104 L300 44"/><circle class="dot" cx="300" cy="104" r="3.5"/>
+              <text class="lbl b" x="300" y="36" text-anchor="middle">Widerstandsdraht (z. B. Konstantan)</text>
+              <path class="ldr" d="M262 160 L262 214"/><circle class="dot" cx="262" cy="160" r="3.5"/>
+              <text class="lbl" x="262" y="232" text-anchor="middle">Keramikkörper</text>
+              <path class="ldr" d="M470 182 L470 214"/><circle class="dot" cx="470" cy="182" r="3.5"/>
+              <text class="lbl g" x="470" y="232" text-anchor="middle">Glasur / Zement</text>
+            </svg>
+            <figcaption>Aufbau eines Drahtwiderstands</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7 · Kohleschichtwiderstand -->
+    <section class="slide" data-title="Kohleschichtwiderstand">
+      <div class="wrap">
+        <div class="eyebrow r" style="--d:0">Thema 6</div>
+        <h2 class="r" style="--d:1"><em>Kohleschicht</em>widerstand</h2>
+        <div class="split">
+          <div class="stack">
+            <p class="r" style="--d:2">Auf einen Keramikstab wird eine dünne Schicht aus Glanzkohle abgeschieden. Eine Wendel wird eingeschliffen: Der Stromweg wird länger und schmaler, so lässt sich der Widerstandswert genau einstellen.</p>
+            <div class="grid2 r" style="--d:3">
+              <div class="card green">
+                <h3 style="color:var(--green)">Vorteile</h3>
+                <ul class="list"><li>sehr billig</li><li>großer Wertebereich</li></ul>
+              </div>
+              <div class="card">
+                <h3>Nachteile</h3>
+                <ul class="list minus"><li>Toleranz ±2 … 5 %</li><li>R sinkt bei Wärme</li><li>mehr Rauschen</li></ul>
+              </div>
+            </div>
+            <p class="muted r" style="--d:4">Der Wert steht als Farbcode auf dem Lack, meist mit 4 Ringen.</p>
+          </div>
+          <figure class="fig-box r" style="--d:3">
+            <svg class="fig" viewBox="0 0 640 270" role="img" aria-label="Aufbau eines Kohleschichtwiderstands, teilweise aufgeschnitten">
+              <defs>
+                <clipPath id="cfCore"><rect x="140" y="98" width="360" height="74"/></clipPath>
+              </defs>
+              <line x1="16" y1="135" x2="122" y2="135" stroke="var(--tin-dark)" stroke-width="6" stroke-linecap="round"/>
+              <line x1="518" y1="135" x2="624" y2="135" stroke="var(--tin-dark)" stroke-width="6" stroke-linecap="round"/>
+              <g clip-path="url(#cfCore)">
+                <rect x="140" y="98" width="360" height="74" fill="var(--carbon)"/>
+                <g id="groove" stroke="var(--ceramic)" stroke-width="8"></g>
+                <!-- Lackhülle auf der linken Hälfte -->
+                <path d="M140 92 L300 92 L292 110 L304 128 L292 146 L304 164 L296 180 L140 180 Z" fill="var(--lacquer)"/>
+                <rect x="166" y="92" width="16" height="90" fill="#e8c21a"/>
+                <rect x="196" y="92" width="16" height="90" fill="#7b3fb2"/>
+                <rect x="226" y="92" width="16" height="90" fill="#d42a2a"/>
+                <rect x="268" y="92" width="14" height="90" fill="#c59a2c"/>
+              </g>
+              <rect x="112" y="84" width="34" height="102" rx="6" fill="var(--tin)" stroke="var(--tin-dark)" stroke-width="2"/>
+              <rect x="494" y="84" width="34" height="102" rx="6" fill="var(--tin)" stroke="var(--tin-dark)" stroke-width="2"/>
+
+              <path class="ldr" d="M210 98 L210 44"/><circle class="dot" cx="210" cy="98" r="3.5"/>
+              <text class="lbl" x="210" y="36" text-anchor="middle">Schutzlack mit Farbringen</text>
+              <path class="ldr" d="M405 104 L405 44"/><circle class="dot" cx="405" cy="104" r="3.5"/>
+              <text class="lbl b" x="405" y="36" text-anchor="middle">Kohleschicht</text>
+              <path class="ldr" d="M383 160 L383 214"/><circle class="dot" cx="383" cy="160" r="3.5"/>
+              <text class="lbl g" x="383" y="232" text-anchor="middle">Wendel (Keramik sichtbar)</text>
+              <path class="ldr" d="M511 186 L540 214"/><circle class="dot" cx="511" cy="186" r="3.5"/>
+              <text class="lbl" x="560" y="232" text-anchor="middle">Endkappe</text>
+              <path class="ldr" d="M70 135 L70 214"/><circle class="dot" cx="70" cy="135" r="3.5"/>
+              <text class="lbl" x="70" y="232" text-anchor="middle">Anschlussdraht</text>
+              <text class="lbl s" x="320" y="262" text-anchor="middle">gelb 4 · violett 7 · rot ×10² · gold ±5 %  →  4,7 kΩ</text>
+            </svg>
+            <figcaption>Rechte Hälfte ohne Lack: Kohleschicht mit eingeschliffener Wendel</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8 · Kohleverbundwiderstand -->
+    <section class="slide" data-title="Kohleverbundwiderstand">
+      <div class="wrap">
+        <div class="eyebrow r" style="--d:0">Thema 7</div>
+        <h2 class="r" style="--d:1"><em>Kohleverbund</em>widerstand</h2>
+        <div class="split">
+          <div class="stack">
+            <p class="r" style="--d:2">Auch Kohlemassewiderstand genannt. Kohlepulver (Graphit oder Ruß) wird mit einem Bindemittel aus Harz gemischt und zu einem Stab gepresst. Der <strong>ganze Körper</strong> leitet. Das Mischungsverhältnis bestimmt den Widerstandswert.</p>
+            <div class="grid2 r" style="--d:3">
+              <div class="card green">
+                <h3 style="color:var(--green)">Vorteile</h3>
+                <ul class="list"><li>sehr impulsfest</li><li>robust, kaum induktiv</li></ul>
+              </div>
+              <div class="card">
+                <h3>Nachteile</h3>
+                <ul class="list minus"><li>Toleranz ±10 … 20 %</li><li>starkes Rauschen</li><li>Wert ändert sich mit Feuchte und Alter</li></ul>
+              </div>
+            </div>
+            <p class="muted r" style="--d:4">Heute selten, z. B. für Stoßströme, Hochspannung oder in alten Röhrengeräten.</p>
+          </div>
+          <figure class="fig-box r" style="--d:3">
+            <svg class="fig" viewBox="0 0 640 270" role="img" aria-label="Schnitt durch einen Kohleverbundwiderstand">
+              <defs>
+                <clipPath id="ccCore"><rect x="152" y="94" width="336" height="82" rx="30"/></clipPath>
+              </defs>
+              <rect x="136" y="80" width="368" height="110" rx="44" fill="#9c6b3e"/>
+              <rect x="152" y="94" width="336" height="82" rx="30" fill="#6e737c"/>
+              <g id="particles" clip-path="url(#ccCore)"></g>
+              <line x1="16" y1="135" x2="240" y2="135" stroke="var(--tin-dark)" stroke-width="6" stroke-linecap="round"/>
+              <line x1="400" y1="135" x2="624" y2="135" stroke="var(--tin-dark)" stroke-width="6" stroke-linecap="round"/>
+              <rect x="226" y="120" width="16" height="30" rx="3" fill="var(--tin-dark)"/>
+              <rect x="398" y="120" width="16" height="30" rx="3" fill="var(--tin-dark)"/>
+
+              <path class="ldr" d="M330 112 L330 44"/><circle class="dot" cx="330" cy="112" r="3.5"/>
+              <text class="lbl b" x="330" y="36" text-anchor="middle">Kohlepulver (Graphit / Ruß)</text>
+              <path class="ldr" d="M190 108 L160 44"/><circle class="dot" cx="190" cy="108" r="3.5"/>
+              <text class="lbl" x="150" y="36" text-anchor="middle">Bindemittel (Harz)</text>
+              <path class="ldr" d="M234 150 L234 214"/><circle class="dot" cx="234" cy="150" r="3.5"/>
+              <text class="lbl" x="234" y="232" text-anchor="middle">eingepresster Anschlussdraht</text>
+              <path class="ldr" d="M480 186 L500 214"/><circle class="dot" cx="480" cy="186" r="3.5"/>
+              <text class="lbl g" x="520" y="232" text-anchor="middle">Kunststoffhülle</text>
+            </svg>
+            <figcaption>Längsschnitt: Die Kohleteilchen bilden viele Strompfade durch den ganzen Körper</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- 9 · Oberflächenwiderstände -->
+    <section class="slide" data-title="Oberflächenwiderstände (SMD)">
+      <div class="wrap">
+        <div class="eyebrow r" style="--d:0">Thema 8</div>
+        <h2 class="r" style="--d:1"><em>Oberflächen</em>widerstände (SMD)</h2>
+        <div class="split">
+          <div class="stack">
+            <p class="r" style="--d:2">SMD heißt <i>Surface Mounted Device</i>. Das winzige Bauteil hat keine Drähte. Es wird direkt auf die Oberfläche der Leiterplatte gelötet, meist von Bestückungsautomaten.</p>
+            <div class="card blue r" style="--d:3">
+              <h3>Zahlencode lesen</h3>
+              <div class="calc" style="background:var(--bg)">
+                103 → 10 · 10³ Ω = <b>10 kΩ</b><br>
+                472 → 47 · 10² Ω = <b>4,7 kΩ</b><br>
+                4R7 → R ist das Komma = <b>4,7 Ω</b>
+              </div>
+            </div>
+            <div class="tbl-box r" style="--d:4">
+              <table>
+                <thead><tr><th>Bauform</th><th>Größe in mm</th></tr></thead>
+                <tbody>
+                  <tr><td class="num">1206</td><td class="num">3,2 × 1,6</td></tr>
+                  <tr><td class="num">0805</td><td class="num">2,0 × 1,25</td></tr>
+                  <tr><td class="num">0603</td><td class="num">1,6 × 0,8</td></tr>
+                  <tr><td class="num">0402</td><td class="num">1,0 × 0,5</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <figure class="fig-box r" style="--d:3">
+            <svg class="fig" viewBox="0 0 640 300" role="img" aria-label="Schnitt durch einen SMD-Widerstand auf der Leiterplatte">
+              <!-- Draufsicht -->
+              <g transform="translate(250,6)">
+                <rect x="0" y="0" width="140" height="62" rx="4" fill="var(--carbon)"/>
+                <rect x="0" y="0" width="24" height="62" rx="3" fill="var(--tin)"/>
+                <rect x="116" y="0" width="24" height="62" rx="3" fill="var(--tin)"/>
+                <text x="70" y="40" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-weight="600" font-size="22" fill="#ffffff">103</text>
+              </g>
+              <text class="lbl s" x="400" y="42">Draufsicht</text>
+              <!-- Schnitt -->
+              <rect x="40" y="226" width="560" height="26" fill="#2f7d52"/>
+              <rect x="92" y="218" width="90" height="10" fill="var(--copper)"/>
+              <rect x="458" y="218" width="90" height="10" fill="var(--copper)"/>
+              <path d="M96 218 Q100 196 112 196 L112 218 Z M544 218 Q540 196 528 196 L528 218 Z" fill="#c9cfd6"/>
+              <rect x="108" y="118" width="70" height="100" rx="8" fill="var(--tin)"/>
+              <rect x="462" y="118" width="70" height="100" rx="8" fill="var(--tin)"/>
+              <rect x="116" y="126" width="62" height="84" rx="5" fill="var(--tin-dark)"/>
+              <rect x="462" y="126" width="62" height="84" rx="5" fill="var(--tin-dark)"/>
+              <rect x="126" y="148" width="388" height="58" fill="var(--ceramic-light)" stroke="#d8cfbd" stroke-width="1.5"/>
+              <rect x="126" y="136" width="70" height="12" fill="#dfe3e8"/>
+              <rect x="444" y="136" width="70" height="12" fill="#dfe3e8"/>
+              <rect x="176" y="136" width="288" height="12" fill="var(--carbon)"/>
+              <rect x="352" y="136" width="7" height="12" fill="var(--ceramic-light)"/>
+              <rect x="196" y="120" width="248" height="16" rx="6" fill="var(--green)" fill-opacity=".85"/>
+
+              <path class="ldr" d="M320 120 L320 92"/><circle class="dot" cx="320" cy="122" r="3.5"/>
+              <text class="lbl g" x="320" y="86" text-anchor="middle">Schutzschicht (Glas / Lack)</text>
+              <path class="ldr" d="M220 142 L170 92"/><circle class="dot" cx="220" cy="142" r="3.5"/>
+              <text class="lbl b" x="120" y="86" text-anchor="middle">Widerstandsschicht</text>
+              <path class="ldr" d="M356 142 L500 92"/><circle class="dot" cx="356" cy="142" r="3.5"/>
+              <text class="lbl" x="530" y="86" text-anchor="middle">Laser-Trimmschnitt</text>
+              <path class="ldr" d="M320 178 L320 280"/><circle class="dot" cx="320" cy="178" r="3.5"/>
+              <text class="lbl" x="320" y="296" text-anchor="middle">Keramiksubstrat (Al₂O₃)</text>
+              <path class="ldr" d="M112 170 L40 170"/><circle class="dot" cx="112" cy="170" r="3.5"/>
+              <text class="lbl s" x="60" y="164">Ag/Ni/Sn</text>
+              <path class="ldr" d="M560 239 L600 278"/><circle class="dot" cx="560" cy="239" r="3.5"/>
+              <text class="lbl s" x="600" y="294" text-anchor="end">Leiterplatte</text>
+            </svg>
+            <figcaption>Schnitt: Die Anschlusskappen aus Silber, Nickel und Zinn werden auf die Leiterplatte gelötet</figcaption>
+          </figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- 10 · Zusammenfassung -->
+    <section class="slide" data-title="Zusammenfassung">
+      <div class="wrap">
+        <div class="eyebrow r" style="--d:0">Thema 9</div>
+        <h2 class="r" style="--d:1"><em>Zusammenfassung</em></h2>
+        <div class="grid4 r" style="--d:2">
+          <div class="card blue"><h3>Widerstand</h3><p>hemmt den Strom, Einheit Ohm (Ω)</p></div>
+          <div class="card blue"><h3 class="mono">U = R · I</h3><p>Strom und Spannung sind proportional</p></div>
+          <div class="card green"><h3 class="mono" style="color:var(--green)">P = I² · R</h3><p>Elektrische Energie wird zu Wärme</p></div>
+          <div class="card green"><h3 class="mono" style="color:var(--green)">R = ρ · l / A</h3><p>Material, Länge, Querschnitt, Temperatur</p></div>
+        </div>
+        <div class="tbl-box r" style="--d:3">
+          <table>
+            <thead><tr><th>Bauart</th><th>Aufbau</th><th>Toleranz</th><th>Besonderheit</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Metallschicht</strong></td><td>Metallfilm auf Keramikstab</td><td class="num">±0,1 … 1 %</td><td>genau, rauscharm</td></tr>
+              <tr><td><strong>Draht</strong></td><td>Draht auf Keramikkörper</td><td class="num">±1 … 5 %</td><td>hohe Leistung</td></tr>
+              <tr><td><strong>Kohleschicht</strong></td><td>Kohlefilm auf Keramikstab</td><td class="num">±2 … 5 %</td><td>billig, Standardbauteil</td></tr>
+              <tr><td><strong>Kohleverbund</strong></td><td>Kohlepulver + Harz, gepresst</td><td class="num">±10 … 20 %</td><td>impulsfest</td></tr>
+              <tr><td><strong>SMD</strong></td><td>Schicht auf Keramikplättchen</td><td class="num">±0,1 … 5 %</td><td>winzig, für Automaten</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- 11 · Ende -->
+    <section class="slide title-slide" data-title="Ende">
+      <div class="wrap" style="align-items:flex-start">
+        <div class="big-omega r" style="--d:0" aria-hidden="true">Ω</div>
+        <h1 class="r" style="--d:1">Vielen Dank für eure <span>Aufmerksamkeit!</span></h1>
+        <p class="sub r" style="--d:2">Habt ihr Fragen?</p>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="nav" aria-label="Foliennavigation">
+    <button class="btn prev" id="prev" type="button" aria-label="Vorherige Folie">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 L5 8 L10 13"/></svg>
+      <span class="txt">Zurück</span>
+    </button>
+    <div class="where" id="where"></div>
+    <div class="page" id="page" aria-live="polite">1 <span>/ 11</span></div>
+    <button class="btn next" id="next" type="button" aria-label="Nächste Folie">
+      <span class="txt">Weiter</span>
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3 L11 8 L6 13"/></svg>
+    </button>
+  </nav>
+</div>
+
+<script>
+(() => {
+  const NS = "http://www.w3.org/2000/svg";
+  const el = (tag, attrs, parent) => {
+    const n = document.createElementNS(NS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  };
+  const fmt = (n, d) => n.toFixed(d).replace(".", ",");
+
+  /* ---------- deck navigation ---------- */
+  const slides = [...document.querySelectorAll(".slide")];
+  const total = slides.length;
+  const progress = document.getElementById("progress");
+  const progressBar = progress.parentElement;
+  const page = document.getElementById("page");
+  const where = document.getElementById("where");
+  const prev = document.getElementById("prev");
+  const next = document.getElementById("next");
+  let cur = 0;
+
+  function go(i, fromHash) {
+    i = Math.max(0, Math.min(total - 1, i));
+    slides.forEach((s, k) => {
+      s.classList.toggle("active", k === i);
+      s.classList.toggle("before", k < i);
+      s.setAttribute("aria-hidden", k === i ? "false" : "true");
+      s.inert = k !== i;
+    });
+    cur = i;
+    progress.style.width = ((i + 1) / total * 100) + "%";
+    progressBar.setAttribute("aria-valuenow", i + 1);
+    page.innerHTML = (i + 1) + " <span>/ " + total + "</span>";
+    where.innerHTML = "Der elektrische Widerstand · <b>" + slides[i].dataset.title + "</b>";
+    prev.disabled = i === 0;
+    next.disabled = i === total - 1;
+    slides[i].scrollTop = 0;
+    if (!fromHash) {
+      try { history.replaceState(null, "", "#" + (i + 1)); } catch (e) {}
+    }
+  }
+
+  prev.addEventListener("click", () => go(cur - 1));
+  next.addEventListener("click", () => go(cur + 1));
+
+  document.addEventListener("keydown", e => {
+    if (e.target.closest && e.target.closest("input, textarea, select")) return;
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    if (["ArrowRight", "PageDown", " "].includes(e.key)) { e.preventDefault(); go(cur + 1); }
+    else if (["ArrowLeft", "PageUp"].includes(e.key)) { e.preventDefault(); go(cur - 1); }
+    else if (e.key === "Home") go(0);
+    else if (e.key === "End") go(total - 1);
+  });
+
+  let tx = null, ty = null;
+  const stage = document.getElementById("stage");
+  stage.addEventListener("touchstart", e => {
+    if (e.target.closest("input")) { tx = null; return; }
+    tx = e.touches[0].clientX; ty = e.touches[0].clientY;
+  }, { passive: true });
+  stage.addEventListener("touchend", e => {
+    if (tx === null) return;
+    const dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5) go(cur + (dx < 0 ? 1 : -1));
+    tx = null;
+  }, { passive: true });
+
+  window.addEventListener("hashchange", () => {
+    const n = parseInt(location.hash.slice(1), 10);
+    if (n && n - 1 !== cur) go(n - 1, true);
+  });
+
+  /* agenda on title slide */
+  const agenda = document.getElementById("agenda");
+  slides.slice(1, 10).forEach((s, k) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.innerHTML = "<b>" + (k + 1) + "</b>" + s.dataset.title;
+    b.addEventListener("click", () => go(k + 1));
+    agenda.appendChild(b);
+  });
+
+  /* ---------- slide 2: lattice + electrons ---------- */
+  const lattice = document.getElementById("lattice");
+  for (let r = 0; r < 3; r++) for (let c = 0; c < 8; c++) {
+    const x = 45 + c * 67, y = 55 + r * 65;
+    const g = el("g", { transform: `translate(${x} ${y})` }, lattice);
+    el("circle", { r: 17, fill: "var(--bg)", stroke: "var(--blue)", "stroke-width": 2.5 }, g);
+    el("path", { d: "M-7 0 H7 M0 -7 V7", stroke: "var(--blue)", "stroke-width": 2.5 }, g);
+  }
+  const electrons = document.getElementById("electrons");
+  let seed = 7;
+  const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+  for (let k = 0; k < 9; k++) {
+    let y = 30 + rnd() * 180;
+    let d = `M -12 ${y.toFixed(0)}`;
+    for (let x = 45; x <= 580; x += 67) {
+      y = Math.max(28, Math.min(212, y + (rnd() - .5) * 90));
+      d += ` L ${x + 33} ${y.toFixed(0)}`;
+    }
+    const dot = el("circle", { r: 6.5, fill: "var(--green)" }, electrons);
+    const dur = 5 + rnd() * 3;
+    el("animateMotion", { path: d, dur: dur.toFixed(1) + "s", begin: "-" + (rnd() * dur).toFixed(1) + "s", repeatCount: "indefinite" }, dot);
+  }
+
+  /* ---------- slide 3: Ohm chart ---------- */
+  const xs = U => 60 + U * 35, ys = I => 250 - I * 220;
+  const og = document.getElementById("ohmGrid");
+  for (let U = 0; U <= 10; U += 2) {
+    if (U) el("line", { class: "grid", x1: xs(U), y1: 30, x2: xs(U), y2: 250 }, og);
+    el("text", { class: "tick", x: xs(U), y: 268, "text-anchor": "middle" }, og).textContent = U;
+  }
+  for (let I = 0; I <= 1.001; I += .25) {
+    if (I) el("line", { class: "grid", x1: 60, y1: ys(I), x2: 410, y2: ys(I) }, og);
+    el("text", { class: "tick", x: 52, y: ys(I) + 4, "text-anchor": "end" }, og).textContent = fmt(I, 2);
+  }
+  const inU = document.getElementById("ohmU"), inR = document.getElementById("ohmR");
+  const line = document.getElementById("ohmLine"), dotO = document.getElementById("ohmDot");
+  const gx = document.getElementById("ohmGuideX"), gy = document.getElementById("ohmGuideY");
+  const lab = document.getElementById("ohmLabel");
+  function ohm() {
+    const U = +inU.value, R = +inR.value, I = U / R;
+    const yEnd = ys(10 / R);
+    line.setAttribute("y2", yEnd);
+    lab.setAttribute("y", yEnd - 12);
+    lab.textContent = "R = " + R + " Ω";
+    dotO.setAttribute("cx", xs(U)); dotO.setAttribute("cy", ys(I));
+    gx.setAttribute("x1", xs(U)); gx.setAttribute("x2", xs(U)); gx.setAttribute("y2", ys(I));
+    gy.setAttribute("x2", xs(U)); gy.setAttribute("y1", ys(I)); gy.setAttribute("y2", ys(I));
+    document.getElementById("outU").textContent = fmt(U, 1) + " V";
+    document.getElementById("outR").textContent = R + " Ω";
+    document.getElementById("outI").textContent = fmt(I, 2) + " A";
+  }
+  inU.addEventListener("input", ohm); inR.addEventListener("input", ohm); ohm();
+
+  /* ---------- slide 5: resistivity table ---------- */
+  const rho = [
+    ["Silber", 0.016], ["Kupfer", 0.0178], ["Aluminium", 0.028],
+    ["Eisen", 0.10], ["Konstantan", 0.49], ["Graphit (Kohle)", 8]
+  ];
+  const maxLog = Math.log10(8 / 0.01);
+  document.getElementById("rhoTable").innerHTML = rho.map(([m, v]) => {
+    const w = Math.max(6, Math.log10(v / 0.01) / maxLog * 120);
+    const val = String(v).replace(".", ",");
+    return `<tr${m === "Kupfer" ? ' class="hl"' : ""}><td>${m}</td><td class="num">${val}<span class="bar" style="width:${w.toFixed(0)}px;background:${v > 1 ? "var(--carbon)" : v > .3 ? "var(--green)" : "var(--blue)"}"></span></td></tr>`;
+  }).join("");
+
+  /* ---------- slide 6: wire coil ---------- */
+  const coil = document.getElementById("coil");
+  for (let x = 150; x < 494; x += 14) {
+    el("line", { x1: x, y1: 98, x2: x + 9, y2: 172, stroke: "var(--copper)", "stroke-width": 5, "stroke-linecap": "round" }, coil);
+  }
+
+  /* ---------- slide 7: groove ---------- */
+  const groove = document.getElementById("groove");
+  for (let x = 290; x < 520; x += 30) el("line", { x1: x, y1: 92, x2: x + 26, y2: 180 }, groove);
+
+  /* ---------- slide 8: carbon particles ---------- */
+  const parts = document.getElementById("particles");
+  seed = 42;
+  for (let k = 0; k < 230; k++) {
+    el("circle", { cx: (152 + rnd() * 336).toFixed(1), cy: (94 + rnd() * 82).toFixed(1), r: (1.6 + rnd() * 3.2).toFixed(1), fill: "#1b1e23" }, parts);
+  }
+
+  /* start */
+  const start = parseInt(location.hash.slice(1), 10);
+  go(start ? start - 1 : 0, true);
+})();
+</script>
+</body>
+</html>
