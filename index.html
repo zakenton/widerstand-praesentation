@@ -277,6 +277,26 @@ input[type=range] { width: 100%; accent-color: var(--blue); }
 .btn svg { width: 16px; height: 16px; }
 :focus-visible { outline: 3px solid var(--green); outline-offset: 2px; border-radius: 6px; }
 
+/* ---------- color code ---------- */
+ol.steps { margin: 0; padding: 0; list-style: none; counter-reset: st; display: grid; gap: 10px; }
+ol.steps li { counter-increment: st; display: grid; grid-template-columns: 30px 1fr; gap: 10px; align-items: baseline; }
+ol.steps li::before {
+  content: counter(st); font-family: var(--f-mono); font-weight: 600; font-size: .85em;
+  width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--blue-soft); color: var(--blue);
+}
+.chips { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
+.chip { display: grid; justify-items: center; gap: 2px; font-size: 12px; color: var(--muted); text-align: center; }
+.chip i { width: 100%; height: 22px; border-radius: 5px; border: 1px solid var(--line); }
+.chip b { font-family: var(--f-mono); color: var(--ink); font-size: 14px; }
+.cc-ctrl { display: grid; gap: 14px; }
+.cc-ctrl .btn { font-family: var(--f-body); }
+.cc-ctrl label { display: grid; gap: 4px; font-size: var(--fs-small); color: var(--muted); }
+.cc-ctrl select {
+  font: inherit; font-size: var(--fs-small); color: var(--ink); background: var(--bg);
+  border: 1.5px solid var(--line); border-radius: 8px; padding: 6px 8px; width: 100%;
+}
+
 /* ---------- responsive ---------- */
 @media (max-width: 900px) {
   .split, .split.even { grid-template-columns: minmax(0, 1fr); }
@@ -299,7 +319,7 @@ input[type=range] { width: 100%; accent-color: var(--blue); }
 <body>
 
 <div class="deck">
-  <div class="progress" role="progressbar" aria-label="Fortschritt" aria-valuemin="1" aria-valuemax="11" aria-valuenow="1">
+  <div class="progress" role="progressbar" aria-label="Fortschritt" aria-valuemin="1" aria-valuemax="12" aria-valuenow="1">
     <div class="progress-fill" id="progress"></div>
   </div>
 
@@ -633,10 +653,64 @@ input[type=range] { width: 100%; accent-color: var(--blue); }
       </div>
     </section>
 
-    <!-- 8 · Kohleverbundwiderstand -->
-    <section class="slide" data-title="Kohleverbundwiderstand">
+    <!-- 8 · Farbcode -->
+    <section class="slide" data-title="Farbcode lesen">
       <div class="wrap">
         <div class="eyebrow r" style="--d:0">Thema 7</div>
+        <h2 class="r" style="--d:1">Den <em>Farbcode</em> lesen</h2>
+        <div class="split">
+          <div class="stack">
+            <ol class="steps r" style="--d:2">
+              <li><span>Widerstand so drehen, dass der <strong>Toleranzring</strong> (Gold oder Silber) rechts ist.</span></li>
+              <li><span><strong>1. und 2. Ring</strong> sind die ersten zwei Ziffern.</span></li>
+              <li><span><strong>3. Ring</strong> ist der Multiplikator: so viele Nullen anhängen.</span></li>
+              <li><span><strong>4. Ring</strong> ist die Toleranz.</span></li>
+            </ol>
+            <div class="calc r" style="--d:3">
+              Braun 1 · Schwarz 0 · Rot ×10² · Gold ±5 %<br>
+              10 · 100 Ω = <b>1000 Ω = 1 kΩ ±5 %</b>
+            </div>
+            <div class="chips r" style="--d:4" id="chips"></div>
+          </div>
+          <div class="stack">
+            <figure class="r" style="--d:3">
+              <svg class="fig" viewBox="0 0 600 190" role="img" aria-label="Widerstand mit vier einstellbaren Farbringen">
+                <defs>
+                  <clipPath id="ccBody"><rect x="150" y="30" width="300" height="80" rx="36"/></clipPath>
+                </defs>
+                <line x1="20" y1="70" x2="160" y2="70" stroke="var(--tin-dark)" stroke-width="6" stroke-linecap="round"/>
+                <line x1="440" y1="70" x2="580" y2="70" stroke="var(--tin-dark)" stroke-width="6" stroke-linecap="round"/>
+                <g clip-path="url(#ccBody)">
+                  <rect x="150" y="30" width="300" height="80" fill="var(--lacquer)"/>
+                  <rect id="band0" x="196" y="30" width="20" height="80"/>
+                  <rect id="band1" x="236" y="30" width="20" height="80"/>
+                  <rect id="band2" x="276" y="30" width="20" height="80"/>
+                  <rect id="band3" x="386" y="30" width="20" height="80"/>
+                  <rect x="150" y="30" width="300" height="80" fill="url(#shine)"/>
+                </g>
+                <g class="lbl s" text-anchor="middle">
+                  <text x="206" y="134">1.</text><text x="246" y="134">2.</text><text x="286" y="134">3.</text><text x="396" y="134">4.</text>
+                  <text x="226" y="154">Ziffern</text><text x="286" y="154">×10ⁿ</text><text x="396" y="154">Toleranz</text>
+                </g>
+                <path class="ldr" d="M200 140 L252 140"/>
+              </svg>
+            </figure>
+            <div class="card r cc-ctrl" style="--d:4">
+              <div class="grid4" id="ccSelects"></div>
+              <div class="result" style="justify-content:space-between">
+                <span><span class="muted" id="ccCalc">47 · 10² Ω =</span> <span class="val" id="ccVal">4,7 kΩ</span> <span class="muted" id="ccTol">±5 %</span></span>
+                <button class="btn prev" type="button" id="ccRandom">Zufälliger Widerstand</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 9 · Kohleverbundwiderstand -->
+    <section class="slide" data-title="Kohleverbundwiderstand">
+      <div class="wrap">
+        <div class="eyebrow r" style="--d:0">Thema 8</div>
         <h2 class="r" style="--d:1"><em>Kohleverbund</em>widerstand</h2>
         <div class="split">
           <div class="stack">
@@ -681,10 +755,10 @@ input[type=range] { width: 100%; accent-color: var(--blue); }
       </div>
     </section>
 
-    <!-- 9 · Oberflächenwiderstände -->
+    <!-- 10 · Oberflächenwiderstände -->
     <section class="slide" data-title="Oberflächenwiderstände (SMD)">
       <div class="wrap">
-        <div class="eyebrow r" style="--d:0">Thema 8</div>
+        <div class="eyebrow r" style="--d:0">Thema 9</div>
         <h2 class="r" style="--d:1"><em>Oberflächen</em>widerstände (SMD)</h2>
         <div class="split">
           <div class="stack">
@@ -754,10 +828,10 @@ input[type=range] { width: 100%; accent-color: var(--blue); }
       </div>
     </section>
 
-    <!-- 10 · Zusammenfassung -->
+    <!-- 11 · Zusammenfassung -->
     <section class="slide" data-title="Zusammenfassung">
       <div class="wrap">
-        <div class="eyebrow r" style="--d:0">Thema 9</div>
+        <div class="eyebrow r" style="--d:0">Thema 10</div>
         <h2 class="r" style="--d:1"><em>Zusammenfassung</em></h2>
         <div class="grid4 r" style="--d:2">
           <div class="card blue"><h3>Widerstand</h3><p>hemmt den Strom, Einheit Ohm (Ω)</p></div>
@@ -780,7 +854,7 @@ input[type=range] { width: 100%; accent-color: var(--blue); }
       </div>
     </section>
 
-    <!-- 11 · Ende -->
+    <!-- 12 · Ende -->
     <section class="slide title-slide" data-title="Ende">
       <div class="wrap" style="align-items:flex-start">
         <div class="big-omega r" style="--d:0" aria-hidden="true">Ω</div>
@@ -797,7 +871,7 @@ input[type=range] { width: 100%; accent-color: var(--blue); }
       <span class="txt">Zurück</span>
     </button>
     <div class="where" id="where"></div>
-    <div class="page" id="page" aria-live="polite">1 <span>/ 11</span></div>
+    <div class="page" id="page" aria-live="polite">1 <span>/ 12</span></div>
     <button class="btn next" id="next" type="button" aria-label="Nächste Folie">
       <span class="txt">Weiter</span>
       <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3 L11 8 L6 13"/></svg>
@@ -880,7 +954,7 @@ input[type=range] { width: 100%; accent-color: var(--blue); }
 
   /* agenda on title slide */
   const agenda = document.getElementById("agenda");
-  slides.slice(1, 10).forEach((s, k) => {
+  slides.slice(1, total - 1).forEach((s, k) => {
     const b = document.createElement("button");
     b.type = "button";
     b.innerHTML = "<b>" + (k + 1) + "</b>" + s.dataset.title;
@@ -963,7 +1037,63 @@ input[type=range] { width: 100%; accent-color: var(--blue); }
   const groove = document.getElementById("groove");
   for (let x = 290; x < 520; x += 30) el("line", { x1: x, y1: 92, x2: x + 26, y2: 180 }, groove);
 
-  /* ---------- slide 8: carbon particles ---------- */
+  /* ---------- color code ---------- */
+  // [Name, Farbe, Ziffer, Multiplikator-Exponent, Toleranz in %]
+  const CC = [
+    ["Schwarz", "#1b1b1b", 0, 0, null],
+    ["Braun", "#7a4a26", 1, 1, 1],
+    ["Rot", "#d42a2a", 2, 2, 2],
+    ["Orange", "#ee7a1c", 3, 3, null],
+    ["Gelb", "#e8c21a", 4, 4, null],
+    ["Grün", "#2f9a4a", 5, 5, 0.5],
+    ["Blau", "#2c5fd0", 6, 6, 0.25],
+    ["Violett", "#7b3fb2", 7, 7, 0.1],
+    ["Grau", "#8a8f96", 8, null, 0.05],
+    ["Weiß", "#f4f4f4", 9, null, null],
+    ["Gold", "#c59a2c", null, -1, 5],
+    ["Silber", "#b9bec5", null, -2, 10]
+  ];
+  document.getElementById("chips").innerHTML = CC.map(([n, c, d, m]) =>
+    `<div class="chip"><i style="background:${c}"></i><b>${d ?? (m === -1 ? "×0,1" : "×0,01")}</b>${n}</div>`).join("");
+
+  const bandRoles = [
+    ["1. Ring", c => c[2] !== null && c[2] > 0],
+    ["2. Ring", c => c[2] !== null],
+    ["3. Ring ×", c => c[3] !== null],
+    ["4. Ring ±", c => c[4] !== null]
+  ];
+  const ccSel = document.getElementById("ccSelects");
+  const sels = bandRoles.map(([label, ok], k) => {
+    const l = document.createElement("label");
+    l.textContent = label;
+    const s = document.createElement("select");
+    s.id = "cc" + k;
+    CC.forEach((c, i) => { if (ok(c)) s.add(new Option(c[0], i)); });
+    l.appendChild(s); ccSel.appendChild(l);
+    s.addEventListener("change", cc);
+    return s;
+  });
+  [4, 7, 2, 10].forEach((v, k) => sels[k].value = v);
+
+  const fmtOhm = v => {
+    const [d, u] = v >= 1e6 ? [1e6, " MΩ"] : v >= 1e3 ? [1e3, " kΩ"] : [1, " Ω"];
+    return String(+(v / d).toFixed(3)).replace(".", ",") + u;
+  };
+  function cc() {
+    const c = sels.map(s => CC[+s.value]);
+    c.forEach((x, k) => document.getElementById("band" + k).setAttribute("fill", x[1]));
+    const two = c[0][2] * 10 + c[1][2], e = c[2][3];
+    document.getElementById("ccCalc").textContent = `${two} · 10${e < 0 ? "⁻" : ""}${"⁰¹²³⁴⁵⁶⁷"[Math.abs(e)]} Ω =`;
+    document.getElementById("ccVal").textContent = fmtOhm(two * Math.pow(10, e));
+    document.getElementById("ccTol").textContent = "±" + String(c[3][4]).replace(".", ",") + " %";
+  }
+  document.getElementById("ccRandom").addEventListener("click", () => {
+    sels.forEach(s => { s.selectedIndex = Math.floor(Math.random() * s.options.length); });
+    cc();
+  });
+  cc();
+
+  /* ---------- slide 9: carbon particles ---------- */
   const parts = document.getElementById("particles");
   seed = 42;
   for (let k = 0; k < 230; k++) {
